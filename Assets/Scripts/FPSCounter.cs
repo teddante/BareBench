@@ -8,14 +8,16 @@ public class FPSCounter : MonoBehaviour
     // Overlay options
     [SerializeField] private bool showOverlay = true;
     [SerializeField] private bool showInstantaneous = false; // disables per-repaint formatting by default
+    [SerializeField] private float uiScale = 1f;             // additional multiplier for DPI scaling
 
     // Benchmark options (no CLI/env): set in Inspector
     [SerializeField] private float warmupSeconds = 0f;              // frames ignored until this time
-    [SerializeField] private float benchmarkDurationSeconds = 0f;   // 0 = run indefinitely
+    [SerializeField] private float benchmarkDurationSeconds = 0f;   // 0 = run indefinitely (when auto-run disabled)
     [SerializeField] private bool reportOnFinish = true;            // print summary when duration elapses
     [SerializeField] private bool quitOnFinish = false;             // quit app after report
     [SerializeField] private int maxSamples = 200000;               // dt samples capacity (~0.8 MB)
     [SerializeField] private bool sampleFrameTiming = false;        // optional CPU/GPU timings
+    [SerializeField] private bool autoRunShortBenchmark = true;     // if true and duration<=0: apply 2s warmup + 20s run
 
     private float accumTime;         // time since last UI update
     private int frames;              // frames since last UI update
@@ -38,6 +40,11 @@ public class FPSCounter : MonoBehaviour
     private GUIStyle style;
     private Rect rect;
     private GUIContent overlayText = new GUIContent();
+    private int baseFontSize = 20;
+    private Rect baseRect = new Rect(10, 10, 520, 120);
+
+    // Cache to avoid per-frame allocations in timing mode
+    private UnityEngine.FrameTiming[] oneTiming;
 
     void Awake()
     {
@@ -48,7 +55,7 @@ public class FPSCounter : MonoBehaviour
         // Plug-and-play defaults for both Editor and builds:
         // If no duration set in the scene, run a short benchmark automatically.
         // Keep the window open afterwards so users can read/screenshot results.
-        if (benchmarkDurationSeconds <= 0f)
+        if (autoRunShortBenchmark && benchmarkDurationSeconds <= 0f)
         {
             if (warmupSeconds <= 0f) warmupSeconds = 2f;
             benchmarkDurationSeconds = 20f;
@@ -58,13 +65,18 @@ public class FPSCounter : MonoBehaviour
 
         style = new GUIStyle
         {
-            fontSize = 20,
+            fontSize = baseFontSize,
             normal = { textColor = Color.white }
         };
-        rect = new Rect(10, 10, 520, 120);
+        rect = baseRect;
 
         dtSamples = new float[Mathf.Max(1024, maxSamples)];
         inWarmup = warmupSeconds > 0f;
+
+        if (sampleFrameTiming && oneTiming == null)
+        {
+            oneTiming = new UnityEngine.FrameTiming[1];
+        }
     }
 
     void Update()
@@ -129,12 +141,12 @@ public class FPSCounter : MonoBehaviour
             if (sampleFrameTiming)
             {
                 UnityEngine.FrameTimingManager.CaptureFrameTimings();
-                UnityEngine.FrameTiming[] timings = new UnityEngine.FrameTiming[1];
-                var count = UnityEngine.FrameTimingManager.GetLatestTimings(1, timings);
+                if (oneTiming == null) oneTiming = new UnityEngine.FrameTiming[1];
+                var count = UnityEngine.FrameTimingManager.GetLatestTimings(1, oneTiming);
                 if (count > 0)
                 {
-                    cpuTimeSumMs += timings[0].cpuFrameTime;
-                    gpuTimeSumMs += timings[0].gpuFrameTime;
+                    cpuTimeSumMs += oneTiming[0].cpuFrameTime;
+                    gpuTimeSumMs += oneTiming[0].gpuFrameTime;
                     timingSamples++;
                 }
             }
@@ -254,6 +266,23 @@ public class FPSCounter : MonoBehaviour
     void OnGUI()
     {
         if (!showOverlay) return;
-        GUI.Label(rect, overlayText, style);
+        // Simple DPI-aware scaling
+        float scale = ComputeUIScale();
+        style.fontSize = Mathf.Max(12, Mathf.RoundToInt(baseFontSize * scale));
+        Rect r = new Rect(baseRect.x, baseRect.y, baseRect.width * scale, baseRect.height * scale);
+        GUI.Label(r, overlayText, style);
+    }
+
+    private float ComputeUIScale()
+    {
+        float dpiScale = 1f;
+        // On many desktops Screen.dpi returns 0; fall back to height-based scaling.
+        float dpi = Screen.dpi;
+        if (dpi > 0f)
+            dpiScale = dpi / 96f; // assume 96 DPI as baseline
+        else
+            dpiScale = Mathf.Clamp(Screen.height / 1080f, 0.5f, 3f);
+
+        return Mathf.Clamp(uiScale * dpiScale, 0.5f, 4f);
     }
 }
