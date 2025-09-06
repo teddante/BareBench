@@ -111,8 +111,9 @@ public class FPSCounter : MonoBehaviour
             if (sampleFrameTiming)
             {
                 UnityEngine.FrameTimingManager.CaptureFrameTimings();
-                var count = UnityEngine.FrameTimingManager.GetLatestTimings(1, out var timings);
-                if (count > 0 && timings.Length > 0)
+                UnityEngine.FrameTiming[] timings = new UnityEngine.FrameTiming[1];
+                var count = UnityEngine.FrameTimingManager.GetLatestTimings(1, timings);
+                if (count > 0)
                 {
                     cpuTimeSumMs += timings[0].cpuFrameTime;
                     gpuTimeSumMs += timings[0].gpuFrameTime;
