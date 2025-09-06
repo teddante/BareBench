@@ -45,6 +45,17 @@ public class FPSCounter : MonoBehaviour
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = -1;
 
+        // Plug-and-play defaults for both Editor and builds:
+        // If no duration set in the scene, run a short benchmark automatically.
+        // Keep the window open afterwards so users can read/screenshot results.
+        if (benchmarkDurationSeconds <= 0f)
+        {
+            if (warmupSeconds <= 0f) warmupSeconds = 2f;
+            benchmarkDurationSeconds = 20f;
+            reportOnFinish = true;
+            // leave quitOnFinish as-is (default false)
+        }
+
         style = new GUIStyle
         {
             fontSize = 20,
@@ -58,6 +69,13 @@ public class FPSCounter : MonoBehaviour
 
     void Update()
     {
+        // Simple convenience: allow ESC to quit
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Quit();
+            return;
+        }
+
         float dt = Time.unscaledDeltaTime;
 
         accumTime += dt;
