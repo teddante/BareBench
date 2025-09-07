@@ -4,23 +4,14 @@
 This project provides a **minimal Unity application** designed for simple PC benchmarking.  
 The program does nothing except:
 - Open a Unity window.
-- Display an FPS counter.
+- Display an benchmarking stuff
 
 It is intended as a **lightweight, silly, but effective way** to measure raw frame rates and system responsiveness in Unity with zero extra overhead.
 
----
-
-## Agent: BareBench
-**Name:** `BareBench`  
-**Role:** Benchmark agent  
-**Behavior:**  
-- Measures real-time frames per second (FPS).  
-- Displays instantaneous and smoothed FPS in the corner of the screen.  
-- Disables VSync and frame caps by default (to expose maximum performance).  
-
----
-
 ## Features
-- **Bare-bones UI**: Only an on-screen FPS counter.  
-- **Headless Benchmarking**: Minimal assets, no gameplay, no extra rendering load.  
-- **Cross-platform**: Works on hopefully anything
+- Bare-bones UI
+- Headless Benchmarking
+- Minimal assets, no gameplay, no extra rendering load.  
+- Cross-platform - Works on hopefully anything
+- Run without hassle, plug n play, no config
+- A benchmark run on this program is fair between any system its run on, runs the same way for all systems its run on
